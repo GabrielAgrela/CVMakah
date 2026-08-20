@@ -65,6 +65,11 @@
                 <span class="button-label">Generate tailored CV</span><span class="button-arrow">↗</span>
               </button>
             </div>
+            <div class="generation-progress" id="generation-progress" hidden aria-live="polite">
+              <div class="progress-track"><span></span></div>
+              <div class="progress-meta"><span id="generation-stage">Starting local generation…</span><span id="generation-elapsed">0s</span></div>
+              <small>Codex may take a little while to read the evidence and build the PDF.</small>
+            </div>
             <p class="error-message" id="input-error" role="alert"></p>
           </div>
 
@@ -108,6 +113,45 @@
                 <a class="secondary-button" id="open-button" target="_blank" rel="noopener" href="#">Open preview ↗</a>
               </div>
               <div class="warning-message" id="warning-message" hidden></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel source-editor-panel" aria-label="Source of truth editor">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">03 · Source of truth</span>
+              <h2>Edit the facts behind every draft.</h2>
+            </div>
+            <span class="step-number">03</span>
+          </div>
+
+          <p class="source-editor-intro">Update your experience and templates here. Changes are saved directly to this local project and are used the next time you generate a CV.</p>
+
+          <div class="source-editor-layout">
+            <div class="source-file-tabs" id="source-file-tabs" role="tablist" aria-label="Editable source files">
+              <div class="source-loading">Loading source files…</div>
+            </div>
+
+            <div class="source-editor-main">
+              <div class="source-file-heading">
+                <div>
+                  <strong id="source-file-name">Loading source files…</strong>
+                  <span id="source-file-description"></span>
+                </div>
+                <span class="source-file-status" id="source-file-status" aria-live="polite">Loading…</span>
+              </div>
+
+              <label class="sr-only" for="source-editor">Source file contents</label>
+              <textarea id="source-editor" class="source-editor" spellcheck="false" disabled placeholder="Source files will appear here…"></textarea>
+
+              <div class="source-editor-footer">
+                <span class="source-save-hint" id="source-save-hint">Saved files stay on this machine.</span>
+                <button class="primary-button source-save-button" id="save-source-button" type="button" disabled>
+                  <span class="button-label">Save changes</span><span class="button-arrow">↓</span>
+                </button>
+              </div>
+              <p class="error-message" id="source-editor-error" role="alert"></p>
             </div>
           </div>
         </section>

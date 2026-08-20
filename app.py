@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import tempfile
 import uuid
+import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -25,6 +26,31 @@ REFERENCE_TEMPLATE_PATH = DATA_DIR / "cv-template-reference.tex"
 APP_TEMPLATE_PATH = ROOT / "cv_template.tex"
 SCHEMA_PATH = ROOT / "cv_response_schema.json"
 
+# These are the only files the browser editor may read or write. Keeping an
+# explicit allow-list prevents a local browser request from becoming an
+# arbitrary filesystem editor while still allowing the personal source and
+# both templates to be customized persistently.
+EDITABLE_FILES: dict[str, dict[str, Any]] = {
+    "experience-source": {
+        "label": "Experience source",
+        "filename": SOURCE_PATH.name,
+        "description": "Factual experience, projects, education, and other evidence used for tailoring.",
+        "path": SOURCE_PATH,
+    },
+    "codex-reference": {
+        "label": "Codex reference template",
+        "filename": REFERENCE_TEMPLATE_PATH.name,
+        "description": "The visual and section reference included in the Codex prompt.",
+        "path": REFERENCE_TEMPLATE_PATH,
+    },
+    "pdf-template": {
+        "label": "PDF render template",
+        "filename": APP_TEMPLATE_PATH.name,
+        "description": "The LaTeX template used to render the final PDF.",
+        "path": APP_TEMPLATE_PATH,
+    },
+}
+
 # Deliberately loopback-only: the app is a private local tool and does not
 # expose your CV source data or Codex-backed generation to the LAN.
 HOST = "127.0.0.1"
@@ -35,16 +61,73 @@ CODEX_BIN = os.environ.get("CVMAKER_CODEX_BIN", "codex")
 CODEX_MODEL = os.environ.get("CVMAKER_CODEX_MODEL", "")
 CODEX_TIMEOUT = int(os.environ.get("CVMAKER_CODEX_TIMEOUT", "180"))
 REQUIRE_CODEX = os.environ.get("CVMAKER_REQUIRE_CODEX", "0") == "1"
+OPEN_BROWSER = os.environ.get("CVMAKER_OPEN_BROWSER", "0") == "1"
 
 MAX_JOB_AD_CHARS = 30_000
+MAX_EDITABLE_FILE_CHARS = 500_000
 
 
 class GenerationError(RuntimeError):
     """An expected error while generating or compiling a CV."""
 
 
+class SourceFileError(RuntimeError):
+    """An expected error while reading or saving an editable source file."""
+
+
 def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def source_file_payload(file_id: str) -> dict[str, Any]:
+    """Read one allow-listed source file for the browser editor."""
+
+    spec = EDITABLE_FILES.get(file_id)
+    if not spec:
+        raise SourceFileError("Unknown source file.")
+    path = spec["path"]
+    try:
+        content = read_text(path)
+        modified = path.stat().st_mtime
+    except (OSError, UnicodeError) as exc:
+        raise SourceFileError(f"Could not read {spec['filename']}: {exc}") from exc
+    return {
+        "id": file_id,
+        "label": spec["label"],
+        "filename": spec["filename"],
+        "description": spec["description"],
+        "content": content,
+        "modified": modified,
+    }
+
+
+def save_source_file(file_id: str, content: Any) -> dict[str, Any]:
+    """Atomically persist an allow-listed source file from the editor."""
+
+    spec = EDITABLE_FILES.get(file_id)
+    if not spec:
+        raise SourceFileError("Unknown source file.")
+    if not isinstance(content, str):
+        raise SourceFileError("Source file content must be text.")
+    if len(content) > MAX_EDITABLE_FILE_CHARS:
+        raise SourceFileError(f"Source files must be under {MAX_EDITABLE_FILE_CHARS:,} characters.")
+    if "\x00" in content:
+        raise SourceFileError("Source files cannot contain null characters.")
+
+    path = spec["path"]
+    temporary_path = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    try:
+        with temporary_path.open("w", encoding="utf-8", newline="") as handle:
+            handle.write(content)
+        os.replace(temporary_path, path)
+    except OSError as exc:
+        raise SourceFileError(f"Could not save {spec['filename']}: {exc}") from exc
+    finally:
+        try:
+            temporary_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+    return source_file_payload(file_id)
 
 
 def compact_text(value: Any, max_length: int = 1_000) -> str:
@@ -104,10 +187,63 @@ def tex_url(value: str) -> str:
 
 
 def existing_executable(command: str) -> str | None:
-    if os.path.sep in command:
-        path = Path(command)
-        return str(path) if path.is_file() and os.access(path, os.X_OK) else None
-    return shutil.which(command)
+    """Resolve an executable name or path on POSIX and Windows.
+
+    ``shutil.which`` understands ``PATHEXT`` on Windows, so it can find the
+    ``.cmd`` shim commonly installed by npm (for example, ``codex.cmd``).
+    PowerShell-only ``.ps1`` shims are also checked explicitly because they are
+    not included in many Windows ``PATHEXT`` values.
+    Falling back to an explicit path also supports values containing spaces or
+    path separators, including paths supplied in quotes by a shell.
+    """
+
+    if not isinstance(command, str):
+        return None
+    command = command.strip()
+    if len(command) >= 2 and command[0] == command[-1] and command[0] in {'"', "'"}:
+        command = command[1:-1].strip()
+    if not command:
+        return None
+
+    resolved = shutil.which(command)
+    if not resolved and os.name == "nt" and not Path(command).suffix:
+        # PowerShell does not normally include .ps1 in PATHEXT. Try the
+        # standard Windows CLI shims explicitly when a command is given by
+        # name rather than by an absolute path.
+        for suffix in (".cmd", ".exe", ".bat", ".ps1"):
+            resolved = shutil.which(command + suffix)
+            if not resolved and suffix == ".ps1" and Path(command).name == command:
+                # .ps1 is intentionally absent from many PATHEXT values, so
+                # inspect PATH directly for a PowerShell-only installation.
+                for directory in os.environ.get("PATH", "").split(os.pathsep):
+                    candidate = Path(directory.strip('"') or ".") / f"{command}{suffix}"
+                    if candidate.is_file():
+                        resolved = str(candidate)
+                        break
+            if resolved:
+                break
+    if resolved:
+        return resolved
+
+    path = Path(command).expanduser()
+    if path.is_file() and (os.name == "nt" or os.access(path, os.X_OK)):
+        return str(path)
+    return None
+
+
+def command_for_executable(executable: str, args: list[str]) -> list[str]:
+    """Build a subprocess argv, including PowerShell script shims on Windows."""
+
+    # npm can expose a CLI through a .ps1 shim when the .cmd shim is not on
+    # PATH. Python cannot execute a PowerShell script directly, so route it
+    # through whichever PowerShell executable is available. .cmd and .bat
+    # files are supported directly by Windows' process launcher.
+    if os.name == "nt" and Path(executable).suffix.lower() == ".ps1":
+        powershell = shutil.which("pwsh") or shutil.which("powershell")
+        if not powershell:
+            raise OSError("PowerShell is required to run the configured .ps1 CLI shim.")
+        return [powershell, "-NoProfile", "-File", executable, *args]
+    return [executable, *args]
 
 
 def configured_codex_model() -> str | None:
@@ -367,7 +503,6 @@ def call_codex(job_ad: str) -> tuple[dict[str, Any] | None, str | None]:
         command = [
             codex_path,
             "exec",
-            "--ephemeral",
             "--sandbox",
             "read-only",
             "--skip-git-repo-check",
@@ -384,11 +519,13 @@ def call_codex(job_ad: str) -> tuple[dict[str, Any] | None, str | None]:
 
         try:
             completed = subprocess.run(
-                command,
+                command_for_executable(codex_path, command[1:]),
                 cwd=ROOT,
                 input=prompt,
                 text=True,
                 capture_output=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=CODEX_TIMEOUT,
                 check=False,
             )
@@ -477,12 +614,32 @@ def compile_pdf(payload: dict[str, Any]) -> bytes:
             str(tex_path),
         ]
         try:
-            first = subprocess.run(command, cwd=temp_path, text=True, capture_output=True, timeout=60, check=False)
+            first = subprocess.run(
+                command_for_executable(pdflatex, command[1:]),
+                cwd=temp_path,
+                text=True,
+                capture_output=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=60,
+                check=False,
+            )
             if first.returncode == 0:
                 # A second pass keeps the template's page/layout metadata stable.
-                subprocess.run(command, cwd=temp_path, text=True, capture_output=True, timeout=60, check=False)
+                subprocess.run(
+                    command_for_executable(pdflatex, command[1:]),
+                    cwd=temp_path,
+                    text=True,
+                    capture_output=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=60,
+                    check=False,
+                )
         except subprocess.TimeoutExpired as exc:
             raise GenerationError("PDF compilation timed out.") from exc
+        except OSError as exc:
+            raise GenerationError(f"Could not start the LaTeX compiler: {exc}") from exc
         pdf_path = temp_path / "cv.pdf"
         if first.returncode != 0 or not pdf_path.exists():
             log = (first.stdout or "") + "\n" + (first.stderr or "")
@@ -555,6 +712,13 @@ class RequestHandler(BaseHTTPRequestHandler):
         if path == "/api/status":
             self.send_json(status_payload())
             return
+        if path == "/api/source-files":
+            try:
+                files = [source_file_payload(file_id) for file_id in EDITABLE_FILES]
+                self.send_json({"files": files})
+            except SourceFileError as exc:
+                self.send_json({"error": str(exc)}, status=500)
+            return
         if path in ("/", "/index.html"):
             self.send_file(PUBLIC_DIR / "index.html")
             return
@@ -588,6 +752,38 @@ class RequestHandler(BaseHTTPRequestHandler):
             print(f"Unexpected generation error: {exc}")
             self.send_json({"error": "Something went wrong while generating the CV."}, status=500)
 
+    def do_PUT(self) -> None:  # noqa: N802
+        prefix = "/api/source-files/"
+        path = urlparse(self.path).path
+        if not path.startswith(prefix):
+            self.send_error(404)
+            return
+        file_id = path.removeprefix(prefix)
+        if not file_id or "/" in file_id:
+            self.send_error(404)
+            return
+
+        try:
+            try:
+                content_length = int(self.headers.get("Content-Length", "0"))
+            except (TypeError, ValueError) as exc:
+                raise SourceFileError("Invalid request length.") from exc
+            if content_length < 0 or content_length > (MAX_EDITABLE_FILE_CHARS * 4) + 4_096:
+                raise SourceFileError("Source file request is too large.")
+            raw_body = self.rfile.read(content_length)
+            body = json.loads(raw_body.decode("utf-8"))
+            if not isinstance(body, dict):
+                raise SourceFileError("Please send a JSON object with a content field.")
+            saved = save_source_file(file_id, body.get("content"))
+            self.send_json(saved)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            self.send_json({"error": "Please send valid UTF-8 JSON."}, status=400)
+        except SourceFileError as exc:
+            self.send_json({"error": str(exc)}, status=400)
+        except Exception as exc:  # Keep the server alive and return a useful message.
+            print(f"Unexpected source file error: {exc}")
+            self.send_json({"error": "Something went wrong while saving the source file."}, status=500)
+
 
 def main() -> None:
     missing = [str(path.relative_to(ROOT)) for path in (SOURCE_PATH, REFERENCE_TEMPLATE_PATH, APP_TEMPLATE_PATH, SCHEMA_PATH) if not path.exists()]
@@ -595,8 +791,14 @@ def main() -> None:
         raise SystemExit(f"Missing required project files: {', '.join(missing)}")
     server = ThreadingHTTPServer((HOST, PORT), RequestHandler)
     actual_port = server.server_address[1]
-    print(f"CV Maker running locally at http://{HOST}:{actual_port}")
+    url = f"http://{HOST}:{actual_port}"
+    print(f"CV Maker running locally at {url}")
     print("Source data stays local; generation uses the installed Codex CLI when available.")
+    if OPEN_BROWSER:
+        try:
+            webbrowser.open(url)
+        except webbrowser.Error as exc:
+            print(f"Could not open the browser automatically: {exc}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
