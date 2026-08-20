@@ -1,0 +1,229 @@
+\documentclass[11pt,a4paper]{article}
+
+%====================================================
+% PACKAGES
+%====================================================
+
+\usepackage[a4paper,margin=1.65cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage[T1]{fontenc}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{sourcesanspro}
+\usepackage{fancyhdr}
+
+%====================================================
+% COLORS
+%====================================================
+
+\definecolor{accent}{RGB}{28,52,92}
+
+%====================================================
+% PAGE STYLE
+%====================================================
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\footnotesize\color{gray}{Demo Candidate \textperiodcentered\ Curriculum Vitae}}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+%====================================================
+% SECTION STYLE
+%====================================================
+
+\titleformat{\section}
+{\large\scshape\bfseries\color{accent}}
+{}
+{0em}
+{}[\color{accent!70}\titlerule]
+
+\titlespacing{\section}
+{0pt}{1.3em}{0.55em}
+
+\linespread{1.05}
+
+%====================================================
+% LIST STYLE
+%====================================================
+
+\setlist[itemize]{
+leftmargin=1.2em,
+itemsep=0.35em,
+topsep=0.3em
+}
+
+%====================================================
+% CUSTOM COMMANDS
+%====================================================
+
+\newcommand{\role}[1]{
+{\large\color{accent!70}\textbf{#1}}
+}
+
+%====================================================
+% DOCUMENT
+%====================================================
+
+\begin{document}
+
+%====================================================
+% HEADER
+%====================================================
+
+\begin{center}
+
+{\Huge \bfseries \color{accent}Demo Candidate}
+
+\role{ML Research \& Development Engineer} \\[0.5em]
+
+{\scriptsize\color{black!70}
+Example City, Country \quad $\cdot$ \quad
+demo@example.invalid \\[0.2em]
+example.invalid/demo-candidate
+}
+
+\end{center}
+
+\vspace{0.5em}
+
+%====================================================
+% SUMMARY
+%====================================================
+
+\section*{\Large Professional Summary}
+
+ML Engineer with experience developing computer vision and machine learning solutions from data preparation and model design to optimization and deployment. Experience includes AI systems for automated inspection, hyperspectral imaging, and robotics applications, with focus on applied machine learning under practical operational constraints. Interested in computer vision, applied AI systems, and scalable machine learning solutions operating in real-world environments.
+
+%====================================================
+% TECHNICAL SKILLS
+%====================================================
+
+\section*{\Large Technical Skills}
+
+\textbf{Machine Learning \& Computer Vision} \\
+PyTorch, OpenCV, scikit-learn, Deep Learning, Computer Vision
+
+\vspace{0.4em}
+
+\textbf{Optimization \& Deployment} \\
+ONNX Runtime, TensorRT, CUDA, Model Optimization
+
+\vspace{0.4em}
+
+\textbf{Programming \& Software} \\
+Python, NumPy, pandas, Git, Linux, SQL, Java
+
+\vspace{0.4em}
+
+\textbf{Robotics \& Vision Systems} \\
+ROS, Sensor Integration, HMI Development
+
+%====================================================
+% EXPERIENCE
+%====================================================
+
+\section*{\Large Professional Experience}
+
+\textbf{Example Robotics Lab}
+{\small \hfill Example City, Country}
+
+{\small\textbf{\textit{Researcher \& Developer -- ML and Computer Vision}}
+\hfill Jan 2023 -- \textbf{Present}}
+
+\begin{itemize}
+
+\item Developed computer vision systems for automated defect detection and inspection workflows in manufacturing environments using deep learning and robotics technologies.
+
+\item Built machine learning pipelines covering data processing, annotation workflows, model training, evaluation, and deployment for applied AI applications.
+
+\item Led development of a hyperspectral imaging solution for textile composition analysis, combining custom deep learning architectures, dataset balancing strategies, and optimized inference workflows.
+
+\item Developed custom training approaches including multi-head networks, custom dataloaders, regularization methods, and architecture adaptation for specialized machine learning tasks.
+
+\item Worked on computer vision applications involving object detection, segmentation, regression, and multi-label classification.
+
+\item Implemented inference acceleration workflows using ONNX Runtime, TensorRT, CUDA providers, and TensorRT engine generation for optimized model execution.
+
+\item Developed camera acquisition and streaming pipelines using Vimba and eBUS SDKs for integration with machine vision systems.
+
+\item Integrated AI inference systems into laboratory and pilot industrial environments with focus on operational validation, deployment reliability, and scalable workflows.
+
+\item Developed Human-Machine Interface (HMI) software for robotic learning and painting systems.
+
+\end{itemize}
+
+%====================================================
+% PUBLICATIONS
+%====================================================
+
+\section*{\Large Selected Publications}
+
+\begin{itemize}
+
+\item \textit{Quality Inspection in Casting Aluminum Parts: A Machine Vision System for Filings Detection and Hole Inspection}
+
+\item \textit{Quality Control of Casting Aluminum Parts: A Comparison of Deep Learning Models for Filings Detection}
+
+\item \textit{Robot at Factory 4.0: An Auto-Referee Proposal Based on Artificial Vision}
+
+\end{itemize}
+
+%====================================================
+% EDUCATION
+%====================================================
+
+\section*{\Large Education}
+
+\textbf{Example Institute of Technology}
+\hfill Example City, Country
+
+{\small\textbf{\textit{Master's Degree in Electrical and Computer Engineering -- Robotics Specialization}}
+\hfill 2021 -- 2022}
+
+\begin{itemize}
+
+\item Master's thesis focused on a fictional computer-vision-based automatic referee for robot-factory competitions, including camera calibration and pose-estimation workflows.
+
+\end{itemize}
+
+\vspace{0.3em}
+
+{\small\textbf{\textit{Bachelor's Degree in Electrical and Computer Engineering -- Automation Specialization}}
+\hfill 2017 -- 2021}
+
+%====================================================
+% CERTIFICATIONS
+%====================================================
+
+\section*{\Large Additional Training \& Certifications}
+
+\begin{itemize}
+
+% \item  AI A-Z [2026] Agentic AI, Gen AI, Prompt Engineering and RL (2026)
+
+\item AWS Machine Learning Learning Plan -- AWS Training \& Certification (2026)
+
+\item AWS Cloud Practitioner Essentials -- AWS Training \& Certification (2026)
+
+\item INVICTA Spring School -- Artificial Intelligence, Computer Vision and Pattern Analysis (2025)
+
+\item Universal Robots Core Training (2025)
+
+\item Agile Project and Product Management -- SCRUM and KANBAN Methodologies (2024)
+
+\item Practical Computer Vision Workshop — Example Institute (2021)
+
+\end{itemize}
+
+%====================================================
+% LANGUAGES
+%====================================================
+
+\section*{ \Large Languages}
+
+Portuguese (Native) \quad $|$ \quad English (C1) \quad $|$ \quad French (A2)
+
+\end{document}
