@@ -4,6 +4,7 @@ __pycache__/
 venv/
 .env
 .DS_Store
+/data/Experience_Source_Data.md
 *.aux
 *.fdb_latexmk
 *.fls
