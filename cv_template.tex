@@ -1,0 +1,96 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[a4paper,margin=1.65cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{fancyhdr}
+
+\definecolor{accent}{RGB}{28,52,92}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\footnotesize\color{gray}{Demo Candidate \textperiodcentered\ Curriculum Vitae}}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\titleformat{\section}
+{\large\scshape\bfseries\color{accent}}
+{}
+{0em}
+{}[\color{accent!70}\titlerule]
+
+\titlespacing{\section}{0pt}{1.3em}{0.55em}
+\linespread{1.05}
+
+\setlist[itemize]{leftmargin=1.2em,itemsep=0.35em,topsep=0.3em}
+
+\newcommand{\role}[1]{{\large\color{accent!70}\textbf{#1}}}
+
+\begin{document}
+
+\begin{center}
+{\Huge \bfseries \color{accent}Demo Candidate}
+
+\role{@@ROLE@@} \\[0.5em]
+
+{\scriptsize\color{black!70}
+Example City, Country \quad $\cdot$ \quad
+demo@example.invalid \\[0.2em]
+example.invalid/demo-candidate
+}
+\end{center}
+
+\vspace{0.5em}
+
+\section*{\Large Professional Summary}
+
+@@SUMMARY@@
+
+\section*{\Large Technical Skills}
+
+@@SKILLS@@
+
+\section*{\Large Professional Experience}
+
+\textbf{Example Robotics Lab}
+{\small \hfill Example City, Country}
+
+{\small\textbf{\textit{Researcher \& Developer -- ML and Computer Vision}}
+\hfill Jan 2023 -- \textbf{Present}}
+
+\begin{itemize}
+@@EXPERIENCE_BULLETS@@
+\end{itemize}
+
+@@PUBLICATIONS_SECTION@@
+
+\section*{\Large Education}
+
+\textbf{Example Institute of Technology}
+\hfill Example City, Country
+
+{\small\textbf{\textit{Master's Degree in Electrical and Computer Engineering -- Robotics Specialization}}
+\hfill 2021 -- 2022}
+
+\begin{itemize}
+\item @@EDUCATION_NOTE@@
+\end{itemize}
+
+\vspace{0.3em}
+
+{\small\textbf{\textit{Bachelor's Degree in Electrical and Computer Engineering -- Automation Specialization}}
+\hfill 2017 -- 2021
+
+@@TRAINING_SECTION@@
+
+\section*{\Large Languages}
+
+Portuguese (Native) \quad $|$ \quad English (C1) \quad $|$ \quad French (A2)
+
+\end{document}
