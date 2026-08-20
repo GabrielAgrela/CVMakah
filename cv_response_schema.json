@@ -1,0 +1,74 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "headline",
+    "summary",
+    "skills",
+    "experience_bullets",
+    "selected_publications",
+    "education_note",
+    "training",
+    "match_notes",
+    "caveats"
+  ],
+  "properties": {
+    "headline": {"type": "string", "minLength": 3, "maxLength": 80},
+    "summary": {"type": "string", "minLength": 1, "maxLength": 850},
+    "skills": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category", "items"],
+        "properties": {
+          "category": {"type": "string", "minLength": 1, "maxLength": 50},
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 8,
+            "items": {"type": "string", "minLength": 1, "maxLength": 45}
+          }
+        }
+      }
+    },
+    "experience_bullets": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 9,
+      "items": {"type": "string", "minLength": 1, "maxLength": 280}
+    },
+    "selected_publications": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {"type": "string", "minLength": 1, "maxLength": 240}
+    },
+    "education_note": {"type": "string", "maxLength": 240},
+    "training": {
+      "type": "array",
+      "maxItems": 6,
+      "items": {"type": "string", "minLength": 1, "maxLength": 240}
+    },
+    "match_notes": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["theme", "evidence"],
+        "properties": {
+          "theme": {"type": "string", "minLength": 1, "maxLength": 60},
+          "evidence": {"type": "string", "minLength": 1, "maxLength": 240}
+        }
+      }
+    },
+    "caveats": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {"type": "string", "minLength": 1, "maxLength": 240}
+    }
+  }
+}
